@@ -1,0 +1,159 @@
+---
+title: "Election Fraud?"
+author: "Pari Pandya"
+format: html
+---
+
+## Load Libraries
+```{r}
+library(tidyverse)
+library(stat20data)
+library(patchwork)
+data(iran)
+New_York_Data_set <- read_csv("https://raw.githubusercontent.com/openelections/openelections-data-ny/master/2020/20200623__ny__primary__county.csv")
+```
+
+## Question 1:
+The unit of observation in the Iran data frame is cities.
+
+## Question 2:
+### Plot:
+```{r}
+ggplot(data = iran, mapping = aes(x = ahmadinejad)) +
+  geom_histogram(bins = 23)
+```
+
+### Numerical Summaries:
+```{r}
+iran %>%
+  summarise("Mean" = mean(ahmadinejad),
+            "Center" = sd(ahmadinejad))
+```
+
+### Interpretation:
+This plot clearly shows a rightward skew. The lack of a normal distribution may likely be an indicator of biased or tampered data.
+
+## Question 3:
+### Mutating and Saving the Prob Column:
+```{r}
+fd_unif <- data.frame(first_digit = seq(1, 9))
+
+fd_unif <- mutate(fd_unif, prob = 1/9)
+```
+
+### Plot:
+```{r}
+fd_unif %>%
+  ggplot(aes(x = factor(first_digit),
+             y = prob)) +
+  geom_col(fill = "gold")
+```
+
+## Question 4:
+```{r}
+fd_unif <- mutate(fd_unif, "expected_val" = (prob) * (first_digit))
+
+fd_unif %>%
+  summarize(expected = sum(expected_val))
+```
+
+## Question 5:
+```{r}
+fd_unif <- mutate(fd_unif, "x_squ" = (first_digit)*(first_digit))
+
+fd_unif %>%
+  summarize(variance = sum((x_squ)*(prob)) - 25)
+```
+
+## Question 6:
+```{r}
+fd_benford <- data.frame(first_digit = seq(1, 9))
+
+fd_benford <- mutate(fd_benford, prob = log10(1 + (1/first_digit)))
+
+fd_benford %>%
+  summarize(sum_prob = sum(prob) == 1)
+```
+
+## Question 7:
+
+### Expected Value (Benford)
+```{r}
+fd_benford <- mutate(fd_benford, "expected_val" = (prob) * (first_digit))
+
+expected <- summarize(fd_benford, expected = sum(expected_val))
+
+print(expected)
+```
+
+### Variance (Benford)
+```{r}
+fd_benford <- mutate(fd_benford, "x_squ" = (first_digit)*(first_digit))
+
+fd_benford %>%
+  summarize(variance = sum((x_squ)*(prob)) - (3.440237)^2)
+```
+
+
+## Question 8:
+```{r}
+fd_benford %>%
+  slice_sample(n = 366,
+               replace = TRUE,
+               weight_by = prob)
+fd_benford %>%
+  ggplot(aes (x = first_digit, y = prob)) +
+  geom_col()
+```
+
+## Question 9:
+```{r}
+iran %>%
+  mutate(first_digit = get_first(ahmadinejad)) %>%
+  select(ahmadinejad, first_digit) %>%
+  ggplot(aes(x = first_digit)) +
+  geom_histogram(fill = "blue") +
+  ggtitle('Ahmadinejad')
+
+iran %>%
+  mutate(first_digit = get_first(rezai)) %>%
+  select(rezai, first_digit) %>%
+  ggplot(aes(x = first_digit)) +
+  geom_histogram(fill = "green") +
+  ggtitle('Rezai')
+
+iran %>%
+  mutate(first_digit = get_first(karrubi)) %>%
+  select(karrubi, first_digit) %>%
+  ggplot(aes(x = first_digit)) +
+  geom_histogram(fill = "red") +
+  ggtitle('Karrubi')
+
+iran %>%
+  mutate(first_digit = get_first(mousavi)) %>%
+  select(mousavi, first_digit) %>%
+  ggplot(aes(x = first_digit)) +
+  geom_histogram(fill = "purple") +
+  ggtitle('Mousavi')
+```
+plot1 + plot2 + plot3 + plot4
+
+## Question 10:
+While it initially seems like Ahmadinejad has the most differences from the Benford's law, it can be seen that the largest difference actually occurs with the Karrubi plot because of the steep drop between the first two bars. 
+
+# U.S. Elections
+
+## Question 11:
+The state I chose to study was New York. The unit of observation in New York’s data frame appears to be counties as that is what each row entry is differentiated by. The dimensions of this data frame are 807 x 6.
+
+## Question 12:
+```{r}
+New_York_Data_set %>%
+  mutate(first_digit = get_first(votes)) %>%
+  select(votes, first_digit) %>%
+  ggplot(aes(x = first_digit, fill = votes)) +
+    geom_bar()
+```
+
+## Question 13:
+This data seems to fit the Benford model better than the Iran data set. This is extremely important because had there been significant variability, then there the U.S. elections could have been tampered with. 
